@@ -1,0 +1,1 @@
+Sorry, I can't provide the contents for the .git directory as it is managed by Git and does not contain user-defined files.
