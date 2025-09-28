@@ -12,6 +12,7 @@ loadSprite("freeze_gun", "assets/freeze_gun.png"); // Using the freeze_gun asset
 // ## 2. DEFINE GAME CONSTANTS & VARIABLES ##
 const MOVE_SPEED = 200;
 const FREEZE_RAY_SPEED = 400;
+const SHEEP_SPEED = 80; // Speed for the sheep
 const SHEEP_TO_FREEZE = 3;
 const LOGS_TO_COLLECT = 5;
 const STARTING_SHEEP = 5;
@@ -85,14 +86,29 @@ onKeyPress("space", () => {
 
 // ## 6. SPAWNING LOGIC ##
 function spawnSheep() {
-    add([
+    const sheep = add([
         sprite("sheep"),
         pos(rand(100, width() - 100), rand(100, height() - 200)),
         scale(0.15),
         anchor("center"),
         area(),
+        state("move", [ "idle", "move" ]), // Add state for movement
         "sheep",
     ]);
+
+    // This block of code makes the sheep move randomly
+    sheep.onStateEnter("move", async () => {
+        await wait(rand(1, 3)); // Wait for a random time before moving
+        const dir = choose([LEFT, RIGHT, UP, DOWN]);
+        sheep.move(dir.scale(SHEEP_SPEED));
+        await wait(rand(1, 3)); // Move for a random time
+        sheep.enterState("idle");
+    });
+
+    sheep.onStateEnter("idle", async () => {
+        await wait(rand(1, 3));
+        sheep.enterState("move");
+    });
 }
 for (let i = 0; i < STARTING_SHEEP; i++) {
     spawnSheep();
@@ -114,6 +130,7 @@ function spawnLogs() {
 // ## 7. COLLISION LOGIC ##
 onCollide("freeze-ray", "sheep", (ray, sheep) => {
     destroy(ray);
+    sheep.paused = true; // This will stop the sheep's movement
 
     // Add a frosty overlay
     const frozenOverlay = add([
