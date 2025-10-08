@@ -8,6 +8,7 @@ loadSprite("steve", "assets/steve.png");
 loadSprite("sheep", "assets/sheep.png");
 loadSprite("log", "assets/log.png");
 loadSprite("freeze_gun", "assets/freeze_gun.png"); // Using the freeze_gun asset
+loadSprite("irongod", "assets/irongod.png");
 
 // ## 2. DEFINE GAME CONSTANTS & VARIABLES ##
 const MOVE_SPEED = 200;
@@ -47,7 +48,7 @@ const freezeGun = add([
     scale(0.1),
 ]);
 
-// Make the gun follow the player
+// Make the gun follow the.player
 freezeGun.onUpdate(() => {
     freezeGun.pos = player.pos.add(10, 10); // Offset the gun slightly
 });
@@ -169,11 +170,91 @@ onCollide("player", "log", (p, log) => {
     updateUI();
 
     if (logsCollected >= LOGS_TO_COLLECT) {
-        go("win");
+        go("level2");
     }
 });
 
 // ## 8. WIN SCENE ##
 scene("win", () => {
     add([ text("Level Complete!"), pos(center()), anchor("center") ]);
+});
+
+// ## 9. LEVEL 2 SCENE ##
+scene("level2", () => {
+    const player = add([
+        sprite("steve"),
+        pos(250, 450),
+        anchor("center"),
+        scale(0.2),
+        area(),
+        "player",
+    ]);
+
+    player.onUpdate(() => {
+        if (player.pos.x < 0) {
+            player.pos.x = 0;
+        }
+        if (player.pos.x > width()) {
+            player.pos.x = width();
+        }
+        if (player.pos.y < 0) {
+            player.pos.y = 0;
+        }
+        if (player.pos.y > height()) {
+            player.pos.y = height();
+        }
+    });
+
+    const ironGod = add([
+        sprite("irongod"),
+        pos(width() - 200, 200),
+        anchor("center"),
+        scale(0.3),
+        area(),
+        state("move", ["idle", "move", "attack"]),
+        "irongod",
+    ]);
+
+    // Player movement
+    onKeyDown("left", () => { player.move(-MOVE_SPEED, 0); });
+    onKeyDown("right", () => { player.move(MOVE_SPEED, 0); });
+    onKeyDown("up", () => { player.move(0, -MOVE_SPEED); });
+    onKeyDown("down", () => { player.move(0, MOVE_SPEED); });
+
+    // Iron God Logic
+    ironGod.onStateEnter("move", async () => {
+        const targetPos = vec2(
+            rand(0, width()),
+            rand(0, height())
+        );
+        await ironGod.moveTo(targetPos, SHEEP_SPEED * 1.5);
+        ironGod.enterState("attack");
+    });
+
+    ironGod.onStateEnter("attack", async () => {
+        await wait(1);
+        const freezeRay = add([
+            rect(12, 4),
+            pos(ironGod.pos),
+            color(173, 216, 230),
+            anchor("center"),
+            area(),
+            move(player.pos.sub(ironGod.pos).unit(), FREEZE_RAY_SPEED),
+            "irongod-freeze-ray",
+        ]);
+        await wait(2);
+        ironGod.enterState("move");
+    });
+
+    ironGod.enterState("move");
+
+    onCollide("irongod-freeze-ray", "player", (ray, player) => {
+        destroy(ray);
+        player.paused = true;
+        add([
+            text("You are frozen!"),
+            pos(center()),
+            anchor("center")
+        ]);
+    });
 });
