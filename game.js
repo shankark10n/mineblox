@@ -211,7 +211,6 @@ scene("level2", () => {
         anchor("center"),
         scale(0.3),
         area(),
-        state("move", ["idle", "move", "attack"]),
         "irongod",
     ]);
 
@@ -222,31 +221,34 @@ scene("level2", () => {
     onKeyDown("down", () => { player.move(0, MOVE_SPEED); });
 
     // Iron God Logic
-    ironGod.onStateEnter("move", async () => {
-        const targetPos = vec2(
-            rand(0, width()),
-            rand(0, height())
-        );
-        await ironGod.moveTo(targetPos, SHEEP_SPEED * 1.5);
-        ironGod.enterState("attack");
+    let ironGodMoveDir = choose([LEFT, RIGHT, UP, DOWN]);
+    ironGod.onUpdate(() => {
+        ironGod.move(ironGodMoveDir.scale(SHEEP_SPEED * 1.5));
+        if (ironGod.pos.x < 0 || ironGod.pos.x > width() || ironGod.pos.y < 0 || ironGod.pos.y > height()) {
+            // If it goes off-screen, choose a new direction towards the center
+            ironGodMoveDir = center().sub(ironGod.pos).unit();
+        }
     });
 
-    ironGod.onStateEnter("attack", async () => {
-        await wait(1);
-        const freezeRay = add([
-            rect(12, 4),
-            pos(ironGod.pos),
-            color(173, 216, 230),
-            anchor("center"),
-            area(),
-            move(player.pos.sub(ironGod.pos).unit(), FREEZE_RAY_SPEED),
-            "irongod-freeze-ray",
-        ]);
-        await wait(2);
-        ironGod.enterState("move");
+    // Change direction periodically
+    loop(2, () => {
+        ironGodMoveDir = choose([LEFT, RIGHT, UP, DOWN]);
     });
 
-    ironGod.enterState("move");
+    // Attack periodically
+    loop(1.5, () => {
+        if (player.pos) { // Ensure player exists
+            const freezeRay = add([
+                rect(12, 4),
+                pos(ironGod.pos),
+                color(173, 216, 230),
+                anchor("center"),
+                area(),
+                move(player.pos.sub(ironGod.pos).unit(), FREEZE_RAY_SPEED),
+                "irongod-freeze-ray",
+            ]);
+        }
+    });
 
     onCollide("irongod-freeze-ray", "player", (ray, player) => {
         destroy(ray);
@@ -258,3 +260,5 @@ scene("level2", () => {
         ]);
     });
 });
+
+go("level2");
