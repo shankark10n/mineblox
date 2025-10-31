@@ -187,6 +187,7 @@ scene("level2", () => {
         anchor("center"),
         scale(0.2),
         area(),
+        { isFrozen: false }, // Property to track freeze state
         "player",
     ]);
 
@@ -211,14 +212,47 @@ scene("level2", () => {
         anchor("center"),
         scale(0.3),
         area(),
+        { health: 5 }, // Give the Iron God 5 health
         "irongod",
     ]);
 
     // Player movement
-    onKeyDown("left", () => { player.move(-MOVE_SPEED, 0); });
-    onKeyDown("right", () => { player.move(MOVE_SPEED, 0); });
-    onKeyDown("up", () => { player.move(0, -MOVE_SPEED); });
-    onKeyDown("down", () => { player.move(0, MOVE_SPEED); });
+    onKeyDown("left", () => {
+        if (!player.isFrozen) {
+            player.move(-MOVE_SPEED, 0);
+            lastDir = LEFT;
+        }
+    });
+    onKeyDown("right", () => {
+        if (!player.isFrozen) {
+            player.move(MOVE_SPEED, 0);
+            lastDir = RIGHT;
+        }
+    });
+    onKeyDown("up", () => {
+        if (!player.isFrozen) {
+            player.move(0, -MOVE_SPEED);
+            lastDir = UP;
+        }
+    });
+    onKeyDown("down", () => {
+        if (!player.isFrozen) {
+            player.move(0, MOVE_SPEED);
+            lastDir = DOWN;
+        }
+    });
+
+    onKeyPress("space", () => {
+        add([
+            rect(12, 4),
+            pos(player.pos),
+            color(173, 216, 230),
+            anchor("center"),
+            area(),
+            move(RIGHT, FREEZE_RAY_SPEED), // Shoots to the right
+            "freeze-ray",
+        ]);
+    });
 
     // Iron God Logic
     let ironGodMoveDir = choose([LEFT, RIGHT, UP, DOWN]);
@@ -259,6 +293,42 @@ scene("level2", () => {
             anchor("center")
         ]);
     });
+
+    // Add a frosty overlay
+    const frozenOverlay = add([
+        rect(0.5 * 0.5 * 0.8 * player.width, 0.5 * 0.5 * 0.8 * player.height),
+        pos(player.pos),
+        anchor("center"),
+        color(100, 200, 255),
+        opacity(0.4),
+        outline(2, rgb(66, 118, 255)),
+        "frozen",
+    ]);
+    frozenOverlay.onUpdate(() => {
+        frozenOverlay.pos = player.pos;
+    });
+
+
+    onCollide("freeze-ray", "irongod", (ray, god) => {
+        destroy(ray);
+        god.health--;
+
+        // Show a "hit" effect (flash)
+        god.opacity = 0.5;
+        wait(0.1, () => {
+            god.opacity = 1;
+        });
+
+        if (god.health <= 0) {
+            destroy(god);
+            // Destroy all enemy rays to clean up
+            every("irongod-freeze-ray", destroy);
+            
+            // Go to the win scene
+            go("win");
+        }
+    });
+
 });
 
 go("level2");
