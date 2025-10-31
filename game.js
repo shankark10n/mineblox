@@ -270,7 +270,7 @@ scene("level2", () => {
     });
 
     // Attack periodically
-    loop(1.5, () => {
+    loop(4, () => {
         if (player.pos) { // Ensure player exists
             const freezeRay = add([
                 rect(12, 4),
@@ -292,22 +292,21 @@ scene("level2", () => {
             pos(center()),
             anchor("center")
         ]);
-    });
 
-    // Add a frosty overlay
-    const frozenOverlay = add([
-        rect(0.5 * 0.5 * 0.8 * player.width, 0.5 * 0.5 * 0.8 * player.height),
-        pos(player.pos),
-        anchor("center"),
-        color(100, 200, 255),
-        opacity(0.4),
-        outline(2, rgb(66, 118, 255)),
-        "frozen",
-    ]);
-    frozenOverlay.onUpdate(() => {
-        frozenOverlay.pos = player.pos;
+        // Add a frosty overlay
+        const frozenOverlay = add([
+            rect(0.5 * 0.5 * 0.8 * player.width, 0.5 * 0.5 * 0.8 * player.height),
+            pos(player.pos),
+            anchor("center"),
+            color(100, 200, 255),
+            opacity(0.4),
+            outline(2, rgb(66, 118, 255)),
+            "frozen",
+        ]);
+        frozenOverlay.onUpdate(() => {
+            frozenOverlay.pos = player.pos;
+        });
     });
-
 
     onCollide("freeze-ray", "irongod", (ray, god) => {
         destroy(ray);
